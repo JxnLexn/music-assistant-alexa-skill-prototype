@@ -14,7 +14,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/music-assistant-skill
+  IMAGE_NAME: jxnlexn/music-assistant-skill
 
 jobs:
   release:

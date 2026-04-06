@@ -2,7 +2,7 @@
   "name": "Music Assistant Alexa Skill",
   "version": "0.0.50-beta",
   "slug": "music_assistant_skill",
-  "image": "ghcr.io/JxnLexn/music-assistant-skill",
+  "image": "ghcr.io/jxnlexn/music-assistant-skill",
   "description": "Home Assistant add-on for provisioning and hosting the Music Assistant Alexa skill.",
   "url": "https://github.com/JxnLexn/music-assistant-alexa-skill-prototype",
   "arch": [
