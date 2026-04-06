@@ -156,6 +156,12 @@ def _build_status_json():
                 f"<pre class='status-box' tabindex='0' style='white-space:pre-wrap;background:#f6f6f6;padding:8px;border-radius:4px;max-height:200px;overflow:auto;user-select:text'>"
                 f"{content_preview}</pre>"
             )
+        elif resp.status_code == 404 and isinstance(parsed, dict) and parsed.get('error') == 'No URL available, please check if Music Assistant has pushed a URL to the API':
+            ma_api_html = (
+                f'<span class="led yellow"></span> Music Assistant API is reachable, but no stream metadata has been pushed to /ma/push-url yet'
+                f"<pre class='status-box' tabindex='0' style='white-space:pre-wrap;background:#fff9e6;padding:8px;border-radius:4px;max-height:200px;overflow:auto;user-select:text'>"
+                f"{content_preview}</pre>"
+            )
         else:
             ma_api_html = (
                 f'<span class="led red"></span> Music Assistant API responded {resp.status_code} for /ma/latest-url'
@@ -184,6 +190,12 @@ def _build_status_json():
             alexa_api_html = (
                 f'<span class="led green"></span> Alexa API reachable ({resp.status_code}) — /alexa/latest-url'
                 f"<pre class='status-box' tabindex='0' style='white-space:pre-wrap;background:#f6f6f6;padding:8px;border-radius:4px;max-height:200px;overflow:auto;user-select:text'>"
+                f"{content_preview}</pre>"
+            )
+        elif resp.status_code == 404 and isinstance(parsed, dict) and parsed.get('error') == 'Check skill invocations and skill logs.  If there are no invocations, you have made a configuration error':
+            alexa_api_html = (
+                f'<span class="led yellow"></span> Alexa API is reachable, but no successful playback request has populated /alexa/latest-url yet'
+                f"<pre class='status-box' tabindex='0' style='white-space:pre-wrap;background:#fff9e6;padding:8px;border-radius:4px;max-height:200px;overflow:auto;user-select:text'>"
                 f"{content_preview}</pre>"
             )
         else:

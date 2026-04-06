@@ -22,13 +22,17 @@ def add_apl(response_builder, start_paused=False):
     # Import here to avoid circular imports
     from .util import get_ma_hostname, replace_ip_in_url
     
-    # Replace MA-hosted image sources if MA_HOSTNAME is set.
+    # Replace MA-hosted media/image sources if MA_HOSTNAME is set so APL
+    # devices receive publicly reachable HTTPS URLs instead of the internal
+    # Music Assistant IP/port endpoints.
     try:
         hostname = get_ma_hostname(raise_on_http_scheme=False)
     except ValueError:
         hostname = ''
 
     if hostname:
+        data.info["audioSources"] = replace_ip_in_url(data.info.get("audioSources", ""), hostname)
+        data.info["backgroundImageSource"] = replace_ip_in_url(data.info.get("backgroundImageSource", ""), hostname)
         data.info["coverImageSource"] = replace_ip_in_url(data.info.get("coverImageSource", ""), hostname)
 
     # Load the APL document template
