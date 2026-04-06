@@ -72,6 +72,19 @@ fi
 mkdir -p "$OUT_DIR"
 mkdir -p "$TMP_DIR"
 
+run_ask_capture() {
+  local out_file="$1"
+  shift
+  if "$@" >"$out_file" 2>&1; then
+    return 0
+  fi
+
+  echo "ASK CLI command failed: $*" >&2
+  echo "WROTE $out_file" >&2
+  cat "$out_file" >&2 || true
+  return 1
+}
+
 # Verify credentials for the requested profile before running any SMAPI
 # commands. If cli_config exists but is non-functional, delete it so a
 # subsequent auth flow can recreate it cleanly.
@@ -148,7 +161,7 @@ fi
 
 # Query existing skill(s) named "Music Assistant" for this vendor/profile
 LIST_FILE="$TMP_DIR/list_skills.json"
-ask smapi list-skills-for-vendor --profile "$PROFILE" > "$LIST_FILE" 2>&1 || true
+run_ask_capture "$LIST_FILE" ask smapi list-skills-for-vendor --profile "$PROFILE"
 TO_DELETE=$(python3 "$REPO_ROOT/scripts/find_skills_to_delete.py" "$LIST_FILE" 2>/dev/null || true)
 
 # Default: we will create a new skill unless we find and reuse an existing one
@@ -164,7 +177,7 @@ if [ -n "$TO_DELETE" ]; then
     for ((i=1;i<${#existing_arr[@]};i++)); do
       sid=${existing_arr[i]}
       echo "Deleting extra existing skill $sid"
-      ask smapi delete-skill --skill-id "$sid" --profile "$PROFILE" --debug > "$TMP_DIR/delete_skill_${sid}.txt" 2>&1 || true
+      run_ask_capture "$TMP_DIR/delete_skill_${sid}.txt" ask smapi delete-skill --skill-id "$sid" --profile "$PROFILE" --debug
       echo "WROTE $TMP_DIR/delete_skill_${sid}.txt"
     done
   fi
@@ -184,7 +197,7 @@ echo "WROTE $OUT_MANIFEST"
 if [ "$SKIP_CREATE" -eq 0 ]; then
   echo "Creating skill using ASK CLI (profile=$PROFILE)..."
   CREATE_OUT_FILE="$TMP_DIR/create_skill_out.txt"
-  ask smapi create-skill-for-vendor --manifest file://$OUT_MANIFEST --profile $PROFILE > "$CREATE_OUT_FILE" 2>&1 || true
+  run_ask_capture "$CREATE_OUT_FILE" ask smapi create-skill-for-vendor --manifest "file://$OUT_MANIFEST" --profile "$PROFILE"
   CREATE_OUT="$(cat "$CREATE_OUT_FILE")"
   echo "WROTE $CREATE_OUT_FILE"
   echo "$CREATE_OUT"
@@ -212,7 +225,7 @@ else
   # We are reusing an existing skill; update its manifest to match the desired manifest
   echo "Updating manifest for existing skill: $SKILL_ID"
   UPDATE_OUT_FILE="$TMP_DIR/update_manifest_${SKILL_ID}.txt"
-  ask smapi update-skill-manifest --skill-id "$SKILL_ID" --manifest file://$OUT_MANIFEST --profile $PROFILE > "$UPDATE_OUT_FILE" 2>&1 || true
+  run_ask_capture "$UPDATE_OUT_FILE" ask smapi update-skill-manifest --skill-id "$SKILL_ID" --manifest "file://$OUT_MANIFEST" --profile "$PROFILE"
   echo "WROTE $UPDATE_OUT_FILE"
   echo "Rebuilt existing skill: $SKILL_ID"
 fi
@@ -249,7 +262,7 @@ with open(dst, 'w') as f:
 print('WROTE', dst)
 PY
   echo "Uploading minimal invocation model for $INV_LOCALE"
-  ask smapi set-interaction-model --skill-id "$SKILL_ID" --stage "$STAGE" --locale "$INV_LOCALE" --interaction-model file://"$MIN_INV" --profile "$PROFILE" > "$TMP_DIR/set_interaction_${INV_LOCALE}_min.txt" 2>&1 || true
+  run_ask_capture "$TMP_DIR/set_interaction_${INV_LOCALE}_min.txt" ask smapi set-interaction-model --skill-id "$SKILL_ID" --stage "$STAGE" --locale "$INV_LOCALE" --interaction-model "file://$MIN_INV" --profile "$PROFILE"
   echo "WROTE $TMP_DIR/set_interaction_${INV_LOCALE}_min.txt"
 
   # Build list of locales to upload: single `$LOCALE` if provided, else all models
@@ -283,7 +296,7 @@ with open(dst,'w') as f:
 print('WROTE', dst)
 PY
     echo "Uploading $MOD_MODEL -> locale $locale"
-    ask smapi set-interaction-model --skill-id "$SKILL_ID" --stage "$STAGE" --locale "$locale" --interaction-model file://"$MOD_MODEL" --profile "$PROFILE" > "$TMP_DIR/set_interaction_${locale}.txt" 2>&1 || true
+    run_ask_capture "$TMP_DIR/set_interaction_${locale}.txt" ask smapi set-interaction-model --skill-id "$SKILL_ID" --stage "$STAGE" --locale "$locale" --interaction-model "file://$MOD_MODEL" --profile "$PROFILE"
     echo "WROTE $TMP_DIR/set_interaction_${locale}.txt"
   done
 fi

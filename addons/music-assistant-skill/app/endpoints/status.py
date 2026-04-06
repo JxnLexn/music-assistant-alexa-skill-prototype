@@ -41,7 +41,40 @@ def _build_status_json():
                     sid = m.group(0)
                     mf = subprocess.run(['ask', 'smapi', 'get-skill-manifest', '--skill-id', sid, '--profile', 'default'], capture_output=True, text=True)
                     mf_out = mf.stdout or mf.stderr or ''
-                    mm = re.search(r'https?://[^"\s\)\]]+', mf_out)
+                    mf_json = None
+                    mf_error = None
+                    try:
+                        mf_json = json.loads(mf_out)
+                    except Exception:
+                        idx = mf_out.find('{')
+                        if idx != -1:
+                            try:
+                                mf_json = json.loads(mf_out[idx:])
+                            except Exception:
+                                mf_json = None
+                    if mf.returncode != 0 and not mf_json:
+                        mf_error = (mf.stderr or mf.stdout or 'Unknown ASK CLI error').strip()
+                    endpoint_uri = ''
+                    locale_list = []
+                    if isinstance(mf_json, dict):
+                        endpoint_uri = (
+                            mf_json.get('manifest', {})
+                            .get('apis', {})
+                            .get('custom', {})
+                            .get('endpoint', {})
+                            .get('uri', '')
+                        ) or ''
+                        locales_obj = (
+                            mf_json.get('manifest', {})
+                            .get('publishingInformation', {})
+                            .get('locales', {})
+                        )
+                        if isinstance(locales_obj, dict):
+                            locale_list = list(locales_obj.keys())
+                    if not endpoint_uri:
+                        mm = re.search(r'https?://[^"\s\)\]]+', mf_out)
+                        if mm:
+                            endpoint_uri = mm.group(0)
                     try:
                         if skill_host.startswith('http://') or skill_host.startswith('https://'):
                             cfg_host = urllib.parse.urlparse(skill_host).netloc
@@ -65,33 +98,15 @@ def _build_status_json():
                         testing_enabled = False
 
                     is_green = False
-                    if not mm:
+                    if mf_error:
+                        skill_ask_html = f'<span class="led red"></span> Unable to read Music Assistant Skill manifest via ASK CLI: {escape(mf_error)}'
+                    elif not endpoint_uri:
                         testing_msg = 'testing enabled' if testing_enabled else 'testing not enabled'
                         skill_ask_html = f'<span class="led yellow"></span> Music Assistant Skill interaction model {escape(sid)} found; endpoint not set ({testing_msg})'
                     else:
-                        uri = mm.group(0)
                         try:
-                            parsed = urllib.parse.urlparse(uri)
+                            parsed = urllib.parse.urlparse(endpoint_uri)
                             manifest_host = parsed.netloc
-                            locale_list = []
-                            try:
-                                mf_json = None
-                                try:
-                                    mf_json = json.loads(mf_out)
-                                except Exception:
-                                    idx = mf_out.find('{')
-                                    if idx != -1:
-                                        try:
-                                            mf_json = json.loads(mf_out[idx:])
-                                        except Exception:
-                                            mf_json = None
-                                if mf_json:
-                                    locales_obj = mf_json.get('manifest', {}).get('publishingInformation', {}).get('locales', {})
-                                    if isinstance(locales_obj, dict):
-                                        locale_list = list(locales_obj.keys())
-                            except Exception:
-                                locale_list = []
-
                             locale_display = ','.join(locale_list) if locale_list else 'unknown'
 
                             if manifest_host == cfg_host:
