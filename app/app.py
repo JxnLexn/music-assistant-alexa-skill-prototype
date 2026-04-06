@@ -1,14 +1,5 @@
 import os
-from flask import Flask, request, jsonify, Response, g
-from flask_ask_sdk.skill_adapter import SkillAdapter
-from skill.lambda_function import sb  # sb is the SkillBuilder from skill/lambda_function.py
 import json
-import music_assistant_api as ma_api
-import alexa_api as alexa_api
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.middleware.proxy_fix import ProxyFix
-from env_secrets import get_env_secret
-import swagger_ui as maa_swagger
 from collections import deque
 import threading
 import subprocess
@@ -19,15 +10,13 @@ import re
 import base64
 import logging
 
-
-from setup_helpers import sanitize_log, enqueue_setup_log, setup_reader_thread as _helpers_setup_reader_thread, read_master_loop as _helpers_read_master_loop
-from setup_helpers import ask_home_from_credentials_dir, has_functional_cli_config, prepare_cli_config_for_configure
-from signal_helpers import register_signal_handlers
+from flask import Flask, request, jsonify, Response, g, redirect
 
 
 def _load_addon_options_into_env():
     """Load Home Assistant add-on options from /data/options.json."""
     options_path = '/data/options.json'
+    restricted_keys = {'PORT', 'DEBUG_PORT'}
     try:
         if not os.path.exists(options_path):
             return {}
@@ -36,9 +25,14 @@ def _load_addon_options_into_env():
         if not isinstance(options, dict):
             return {}
 
+        # Home Assistant add-on port mappings are static in config.json.
+        # Ignore stale user options for container ports so the app keeps
+        # listening on the port that Supervisor exposes.
+        os.environ.setdefault('ASK_CREDENTIALS_DIR', '/data/.ask')
+
         loaded = {}
         for key, value in options.items():
-            if value is None:
+            if value is None or key in restricted_keys:
                 continue
             os.environ[str(key)] = str(value)
             loaded[str(key)] = str(value)
@@ -64,6 +58,18 @@ _loaded_addon_options = _load_addon_options_into_env()
 # NoRegionError during imports that create AWS clients at module import time.
 os.environ.setdefault('AWS_REGION', os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
 os.environ.setdefault('AWS_DEFAULT_REGION', os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
+
+from flask_ask_sdk.skill_adapter import SkillAdapter
+from skill.lambda_function import sb  # sb is the SkillBuilder from skill/lambda_function.py
+import music_assistant_api as ma_api
+import alexa_api as alexa_api
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.proxy_fix import ProxyFix
+from env_secrets import get_env_secret
+import swagger_ui as maa_swagger
+from setup_helpers import sanitize_log, enqueue_setup_log, setup_reader_thread as _helpers_setup_reader_thread, read_master_loop as _helpers_read_master_loop
+from setup_helpers import ask_home_from_credentials_dir, has_functional_cli_config, prepare_cli_config_for_configure
+from signal_helpers import register_signal_handlers
 
 app = Flask(__name__)
 if _loaded_addon_options:
@@ -299,8 +305,10 @@ def _read_master_loop(master_fd, prefix=None):
     return _helpers_read_master_loop(master_fd, _enqueue_setup_log, prefix=prefix)
 
 
-@app.route("/", methods=["POST"])
+@app.route("/", methods=["GET", "POST"])
 def invoke_skill():
+    if request.method == 'GET':
+        return redirect('/status', code=302)
     # Allow simulator-originated requests to bypass signature/timestamp
     # verification for local testing when the simulator provides a
     # simulator-specific header. This creates a temporary handler with

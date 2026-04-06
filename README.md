@@ -34,18 +34,22 @@ The easiest way to run the project is with Docker Compose. This will build and s
 
 Note: manual creation of the skill in the Alexa Developer Console is no longer required — the `/setup` flow automates creation and enablement when possible.
 
-### 2. Home Assistant add-on (NOT WORKING)
+### 2. Home Assistant add-on
 
-This repository contains an `addons/music-assistant-skill` folder with a simple Home Assistant add-on wrapper. Running it as an add-on in your environment may require additional changes.
+This repository contains an `addons/music-assistant-skill` Home Assistant add-on wrapper for the published GHCR image.
 
-If you want to test as an add-on locally:
+If you want to run it as an add-on:
 
 1. Add this repository as a custom add-on repository in Home Assistant Supervisor (Supervisor > Add-on Store > Repositories).
 2. Install the "Music Assistant Alexa Skill" add-on and open the add-on configuration.
-3. In the add-on configuration, set the options described above (`MA_HOSTNAME`, `APP_USERNAME`, `APP_PASSWORD`, `PORT`, `DEBUG_PORT`, `AWS_DEFAULT_REGION`) as needed.
-4. Start the add-on and check the add-on logs for startup and any missing dependencies or configuration issues.
+3. In the add-on configuration, set the options described above (`SKILL_HOSTNAME`, `MA_HOSTNAME`, `APP_USERNAME`, `APP_PASSWORD`, `LOCALE`, `AWS_DEFAULT_REGION`, `TZ`, `SKIP_URL_VALIDATION`) as needed.
+4. Start the add-on and open the add-on Web UI. It opens `/setup` directly.
+5. ASK CLI credentials are persisted automatically in the add-on data directory at `/data/.ask`, so a restart does not require re-authentication.
 
-**Warning**: Treat this add-on as a user convenience and validate thoroughly as this method has not been tested in a Home Assistant environment and may require adjustments to work properly as an add-on.
+Notes:
+- The add-on uses a fixed internal port of `5000`; Home Assistant exposes that port via the add-on configuration.
+- `SKILL_HOSTNAME` still needs to point at a public HTTPS endpoint that Amazon can reach.
+- `SKIP_URL_VALIDATION=true` can help when the add-on container cannot reach the externally published Music Assistant stream URL from inside Docker.
 
 ### 3. Using `docker run`
 
@@ -62,7 +66,7 @@ docker run --rm \
     -v "$(pwd)/ask_data:/root/.ask" \
     -v "$(pwd)/secrets/app_username.txt:/run/secrets/APP_USERNAME:ro" \
     -v "$(pwd)/secrets/app_password.txt:/run/secrets/APP_PASSWORD:ro" \
-    ghcr.io/alams154/music-assistant-alexa-skill-prototype:latest
+    ghcr.io/alams154/music-assistant-skill:latest
 ```
 
 Notes:
@@ -113,4 +117,3 @@ See [COMPATIBILITY.md](COMPATIBILITY.md) for known supported devices, languages,
 See [LIMITATIONS.md](LIMITATIONS.md) for known limitations.
 
 See [DISCLAIMER.md](DISCLAIMER.md) for security concerns and development disclosures.
-

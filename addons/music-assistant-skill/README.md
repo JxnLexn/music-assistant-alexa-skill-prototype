@@ -15,7 +15,8 @@ This folder contains the Home Assistant add-on wrapper for the `music-assistant-
 1. Add this repository as a custom add-on repository in Home Assistant Supervisor.
 2. Open Supervisor > Add-on Store and install the "Music Assistant Alexa Skill" add-on.
 3. Open the add-on configuration and set the options below as needed.
-4. Start the add-on and check the logs for startup and configuration issues.
+4. Start the add-on and open the Web UI. The add-on opens `/setup` directly.
+5. ASK CLI credentials are stored in the add-on data directory under `/data/.ask` so they survive restarts.
 
 ### 2. Access the service
 
@@ -33,15 +34,14 @@ Set these in the Supervisor add-on configuration:
 | `MA_HOSTNAME`        |    No    | —                 | Music Assistant server hostname. Required if your device does not support APL or if you want album art. |
 | `APP_USERNAME`       |    No    | —                 | Username for the Music Assistant web UI and API basic authentication.                                   |
 | `APP_PASSWORD`       |    No    | —                 | Password for the Music Assistant web UI and API basic authentication.                                   |
-| `PORT`               |    No    | `5000`            | Port the service listens on inside the container.                                                       |
-| `DEBUG_PORT`         |    No    | `5678`            | Remote debug port for `debugpy`.                                                                        |
 | `LOCALE`             |    No    | `en-US`           | Skill locale used by setup and interaction model operations.                                            |
 | `AWS_DEFAULT_REGION` |    No    | `us-east-1`       | AWS region used by ASK CLI operations when needed.                                                      |
 | `TZ`                 |    No    | `America/Chicago` | Container timezone used for logs and timestamps.                                                        |
+| `SKIP_URL_VALIDATION`|    No    | `false`           | Skip stream URL reachability checks when Docker/network routing prevents the add-on from validating the public HTTPS URL. |
 
 ### Notes
 
 - The add-on is configured to pull the prebuilt container image from GHCR (`ghcr.io/alams154/music-assistant-skill:<version>`).
 - The image includes the packages needed to build Python dependencies from `requirements.txt`.
-- If `DEBUG_PORT` is enabled, the container starts the app under `debugpy` so VS Code can attach to it.
-- This add-on is provided as a development convenience. For production or publication to the official add-on store, additional hardening and configuration is recommended.
+- The add-on always listens on the internal port `5000`; the published Home Assistant port mapping must stay aligned with that fixed port.
+- The add-on Web UI entry opens `/setup`, while a plain GET request to `/` redirects to `/status`.

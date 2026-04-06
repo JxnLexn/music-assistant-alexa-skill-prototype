@@ -1,5 +1,11 @@
 FROM ubuntu:22.04
 
+ARG BUILD_VERSION=dev
+
+LABEL io.hass.version="${BUILD_VERSION}" \
+      io.hass.type="addon" \
+      io.hass.arch="amd64|aarch64"
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install Python and system dependencies

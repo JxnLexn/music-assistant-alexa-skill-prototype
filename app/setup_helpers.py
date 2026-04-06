@@ -3,18 +3,28 @@ import re
 import json
 from pathlib import Path
 
+ADDON_OPTIONS_PATH = Path('/data/options.json')
+ADDON_CREDENTIALS_DIR = Path('/data/.ask')
+
+
+def is_home_assistant_addon() -> bool:
+    return ADDON_OPTIONS_PATH.exists()
+
 
 def get_ask_credentials_dir() -> Path:
     """Resolve ASK credentials directory.
 
     Preference order:
     1) ASK_CREDENTIALS_DIR environment variable
-    2) /root/.ask when mounted in container
-    3) ~/.ask
+    2) /data/.ask when running as a Home Assistant add-on
+    3) /root/.ask when mounted in a regular container
+    4) ~/.ask
     """
     configured = (os.environ.get('ASK_CREDENTIALS_DIR') or '').strip()
     if configured:
         return Path(configured).expanduser()
+    if is_home_assistant_addon():
+        return ADDON_CREDENTIALS_DIR
     root_ask = Path('/root/.ask')
     if root_ask.exists():
         return root_ask

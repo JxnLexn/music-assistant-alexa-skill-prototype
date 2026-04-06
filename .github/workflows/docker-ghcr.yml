@@ -77,6 +77,8 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_VERSION=${{ steps.version.outputs.tag }}
           push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -90,6 +92,8 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUILD_VERSION=${{ steps.version.outputs.tag }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
