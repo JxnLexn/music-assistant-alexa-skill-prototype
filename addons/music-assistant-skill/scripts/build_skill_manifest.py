@@ -1,5 +1,25 @@
 #!/usr/bin/env python3
-import sys,json,os
+import json
+import sys
+
+LOCALE_OVERRIDES = {
+    'de-DE': {
+        'name': 'Music Assistant',
+        'examplePhrases': [
+            'Alexa, oeffne Music Assistant',
+            'Alexa, starte Music Assistant',
+            'Alexa, bitte Music Assistant abzuspielen',
+        ],
+    },
+    'en-US': {
+        'name': 'Music Assistant',
+        'examplePhrases': [
+            'Alexa, open music assistant',
+            'Alexa, ask music assistant to play',
+            'Alexa, play music assistant',
+        ],
+    },
+}
 
 if len(sys.argv) < 3:
     print('usage: build_skill_manifest.py <infile> <outfile> [endpoint] [locale]')
@@ -13,8 +33,8 @@ target_locale = sys.argv[4] if len(sys.argv) > 4 else ''
 with open(infile,'r') as f:
     data = json.load(f)
 
-pub = data.setdefault('manifest',{}).setdefault('publishingInformation',{})
-locales = pub.setdefault('locales',{})
+pub = data.setdefault('manifest', {}).setdefault('publishingInformation', {})
+locales = pub.setdefault('locales', {})
 
 # If a target locale is specified, ensure only that locale is present in the
 # publishing information. Otherwise default to en-US as before.
@@ -26,8 +46,9 @@ else:
     loc = locales.setdefault('en-US', {})
     target = 'en-US'
 
-loc['name'] = 'Music Assistant'
-loc['examplePhrases'] = ["Alexa, open music assistant", "Alexa, ask music assistant to play", "Alexa, play music assistant"]
+locale_defaults = LOCALE_OVERRIDES.get(target, LOCALE_OVERRIDES['en-US'])
+loc['name'] = locale_defaults['name']
+loc['examplePhrases'] = locale_defaults['examplePhrases']
 
 if target_locale:
     # keep only the requested locale in the locales map
@@ -69,4 +90,3 @@ if isinstance(ifs, list):
 with open(outfile,'w') as f:
     json.dump(data, f, indent=2)
 print('WROTE', outfile)
-
