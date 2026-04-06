@@ -57,8 +57,7 @@ fi
 command -v ask >/dev/null 2>&1 || { echo "ask CLI not found in PATH. Install it first: https://developer.amazon.com/en-US/docs/alexa/smapi/ask-cli.html"; exit 2; }
 
 # Resolve where ASK CLI credentials should live.
-# Home Assistant add-ons persist data under /data, while the regular Docker
-# Compose flow still mounts credentials at /root/.ask.
+# Home Assistant add-ons persist data under /data.
 if [ -n "${ASK_CREDENTIALS_DIR:-}" ]; then
   mkdir -p "${ASK_CREDENTIALS_DIR}"
   export HOME="$(dirname "${ASK_CREDENTIALS_DIR}")"
@@ -68,10 +67,6 @@ elif [ -f "/data/options.json" ]; then
   mkdir -p "${ASK_CREDENTIALS_DIR}"
   export HOME="/data"
   echo "Using Home Assistant add-on ASK credentials at ${ASK_CREDENTIALS_DIR} (HOME=${HOME})"
-elif [ -d "/root/.ask" ]; then
-  export ASK_CREDENTIALS_DIR="/root/.ask"
-  export HOME="/root"
-  echo "Using persistent ASK credentials at ${ASK_CREDENTIALS_DIR} (HOME=${HOME})"
 fi
 
 mkdir -p "$OUT_DIR"

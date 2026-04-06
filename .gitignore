@@ -68,7 +68,6 @@ dmypy.json
 docker-compose.override.yml
 docker-compose.local.yml
 .docker/
-Dockerfile.*
 
 # macOS
 .DS_Store
@@ -81,9 +80,5 @@ Desktop.ini
 
 # Build files
 tmp
-addons/music-assistant-skill/app
-addons/music-assistant-skill/assets
-addons/music-assistant-skill/scripts
 
 # ASK CLI data
-ask_data/

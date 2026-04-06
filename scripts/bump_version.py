@@ -88,7 +88,7 @@ def main():
     # Determine if any staged file should trigger an image bump
     need_bump = False
     for f in staged:
-        if f == 'Dockerfile' or f.startswith('app/') or f.startswith('addons/') or f.startswith('.github/workflows/'):
+        if f.startswith('addons/music-assistant-skill/') or f.startswith('.github/workflows/'):
             need_bump = True
             break
 

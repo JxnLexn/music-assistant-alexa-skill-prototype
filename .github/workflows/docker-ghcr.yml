@@ -4,16 +4,14 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'Dockerfile'
+      - 'addons/music-assistant-skill/**'
       - '.github/workflows/docker-ghcr.yml'
-      - 'app/**'
       - 'VERSION'
   pull_request:
     branches: [ master ]
     paths:
-      - 'Dockerfile'
+      - 'addons/music-assistant-skill/**'
       - '.github/workflows/docker-ghcr.yml'
-      - 'app/**'
       - 'VERSION'
   workflow_dispatch:
 
@@ -74,8 +72,8 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./addons/music-assistant-skill
+          file: ./addons/music-assistant-skill/Dockerfile
           platforms: linux/amd64,linux/arm64
           build-args: |
             BUILD_VERSION=${{ steps.version.outputs.tag }}
@@ -89,8 +87,8 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./addons/music-assistant-skill
+          file: ./addons/music-assistant-skill/Dockerfile
           platforms: linux/amd64,linux/arm64
           build-args: |
             BUILD_VERSION=${{ steps.version.outputs.tag }}

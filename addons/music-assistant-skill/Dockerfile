@@ -77,14 +77,13 @@ PY
 # Install ASK CLI (v2) globally so container can run `ask configure`
 RUN npm install -g ask-cli || true
 
-# Now copy the rest of your source code (commented out for dynamic development)
+# Copy the add-on runtime sources into the image.
 COPY app /app/src
-# Copy the skill manifest and related app files so runtime can find app/skill.json
-# This ensures /app/app/skill.json exists inside the container for the create script.
+# Copy the skill manifest and related app files so runtime can find app/skill.json.
 COPY app /app/app
-# Copy repository-level assets (icons, images) into the container so favicons are available
+# Copy bundled assets (icons, screenshots) into the container so favicons are available.
 COPY assets /app/assets
-# Copy top-level helper scripts so runtime can execute them (ask_create_skill.sh)
+# Copy helper scripts used by the setup flow.
 COPY scripts /app/scripts
 RUN chmod +x /app/scripts/ask_create_skill.sh || true
 

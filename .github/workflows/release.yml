@@ -57,8 +57,9 @@ jobs:
 
           new="$major.$minor.$patch$prerelease"
           echo "$new" > VERSION
+          python3 scripts/sync_version.py
 
-          git add VERSION
+          git add VERSION addons/music-assistant-skill/config.json
           git commit -m "chore(release): bump version to $new [skip ci]" || echo "no changes to commit"
           git tag "v$new" || echo "tag exists"
           git push origin HEAD:${{ github.ref_name }} --follow-tags || git push --follow-tags origin
@@ -98,8 +99,8 @@ jobs:
       - name: Build & Push (multi-arch)
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./addons/music-assistant-skill
+          file: ./addons/music-assistant-skill/Dockerfile
           platforms: linux/amd64,linux/arm64
           build-args: |
             BUILD_VERSION=${{ steps.bump.outputs.version }}

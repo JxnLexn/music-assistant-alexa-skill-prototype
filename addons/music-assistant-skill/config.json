@@ -3,7 +3,7 @@
   "version": "0.0.40-beta",
   "slug": "music_assistant_skill",
   "image": "ghcr.io/alams154/music-assistant-skill",
-  "description": "Expose the Music Assistant Alexa skill as a Home Assistant add-on (development/edge use).",
+  "description": "Home Assistant add-on for provisioning and hosting the Music Assistant Alexa skill.",
   "url": "https://github.com/alams154/music-assistant-alexa-skill-prototype",
   "arch": [
     "aarch64",

@@ -17,17 +17,13 @@ def get_ask_credentials_dir() -> Path:
     Preference order:
     1) ASK_CREDENTIALS_DIR environment variable
     2) /data/.ask when running as a Home Assistant add-on
-    3) /root/.ask when mounted in a regular container
-    4) ~/.ask
+    3) ~/.ask
     """
     configured = (os.environ.get('ASK_CREDENTIALS_DIR') or '').strip()
     if configured:
         return Path(configured).expanduser()
     if is_home_assistant_addon():
         return ADDON_CREDENTIALS_DIR
-    root_ask = Path('/root/.ask')
-    if root_ask.exists():
-        return root_ask
     return Path.home() / '.ask'
 
 

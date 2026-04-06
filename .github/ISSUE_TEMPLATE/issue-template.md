@@ -37,7 +37,8 @@ Fill in the sections below. If this is not a bug, you can remove this section.
 - **Environment:**
   - Version: (e.g. commit hash or release tag)
   - OS: (Linux/macOS/Windows + distro/version)
-  - How you ran the project (docker compose / docker run / other):
+  - Home Assistant installation type: (OS / Supervised / Container / other)
+  - How the add-on was installed/run: (custom add-on repo / local build / other)
 
 ---
 

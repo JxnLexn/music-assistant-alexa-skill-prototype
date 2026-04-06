@@ -86,9 +86,9 @@ try:
         app.logger.debug('QUIET_HTTP enabled: werkzeug/urllib3 log level set to WARNING')
 except Exception:
     pass
-# Allow overriding where ASK CLI stores credentials so they persist across containers.
-# If ASK_CREDENTIALS_DIR is set (e.g. /root/.ask), set HOME to its parent so
-# tools that rely on ~/.ask (ASK CLI) use the mounted location.
+# Allow overriding where ASK CLI stores credentials so they persist in the
+# add-on data directory. If ASK_CREDENTIALS_DIR is set, map HOME to its parent
+# so tools that rely on ~/.ask (ASK CLI) use the requested location.
 try:
     ask_home = ask_home_from_credentials_dir()
     if ask_home:
