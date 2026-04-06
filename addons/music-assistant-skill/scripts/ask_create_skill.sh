@@ -119,6 +119,7 @@ wait_for_manifest_ready() {
       printf '%s' "$status_json" > "$dump_file" 2>/dev/null || true
       echo " - manifest build FAILED"
       echo "WROTE $dump_file"
+      cat "$dump_file" 2>/dev/null || true
       return 1
     fi
 
@@ -138,6 +139,7 @@ wait_for_manifest_ready() {
   printf '%s' "$status_json" > "$dump_file" 2>/dev/null || true
   echo " - WARNING: manifest build did not reach ready state after $((max_retries*sleep_seconds))s"
   echo "WROTE $dump_file"
+  cat "$dump_file" 2>/dev/null || true
   return 1
 }
 
