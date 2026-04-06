@@ -85,6 +85,62 @@ run_ask_capture() {
   return 1
 }
 
+wait_for_manifest_ready() {
+  local skill_id="$1"
+  local profile="$2"
+  local max_retries="${3:-24}"
+  local sleep_seconds="${4:-5}"
+  local attempts=0
+  local status_json=""
+  local cur_status=""
+  local manifest_json=""
+  local dump_file="$TMP_DIR/get_manifest_status_${skill_id}.json"
+
+  echo -n "Waiting for manifest build for ${skill_id}"
+  while [ "$attempts" -lt "$max_retries" ]; do
+    status_json="$(ask smapi get-skill-status --skill-id "$skill_id" --resource manifest --profile "$profile" 2>/dev/null || true)"
+    cur_status=""
+
+    if printf '%s' "$status_json" | grep -q '"status"[[:space:]]*:[[:space:]]*"SUCCEEDED"'; then
+      cur_status="SUCCEEDED"
+    elif printf '%s' "$status_json" | grep -q '"status"[[:space:]]*:[[:space:]]*"FAILED"'; then
+      cur_status="FAILED"
+    elif printf '%s' "$status_json" | grep -q '"status"[[:space:]]*:[[:space:]]*"IN_PROGRESS"'; then
+      cur_status="IN_PROGRESS"
+    elif printf '%s' "$status_json" | grep -q '"status"[[:space:]]*:[[:space:]]*"PENDING"'; then
+      cur_status="PENDING"
+    fi
+
+    if [ "$cur_status" = "SUCCEEDED" ]; then
+      echo " - manifest build SUCCEEDED"
+      return 0
+    fi
+    if [ "$cur_status" = "FAILED" ]; then
+      printf '%s' "$status_json" > "$dump_file" 2>/dev/null || true
+      echo " - manifest build FAILED"
+      echo "WROTE $dump_file"
+      return 1
+    fi
+
+    # Fallback: if the skill manifest is already retrievable and contains an endpoint,
+    # treat it as ready even if status polling is lagging.
+    manifest_json="$(ask smapi get-skill-manifest --skill-id "$skill_id" --profile "$profile" 2>/dev/null || true)"
+    if printf '%s' "$manifest_json" | grep -q '"endpoint"'; then
+      echo " - manifest available"
+      return 0
+    fi
+
+    attempts=$((attempts+1))
+    echo -n "."
+    sleep "$sleep_seconds"
+  done
+
+  printf '%s' "$status_json" > "$dump_file" 2>/dev/null || true
+  echo " - WARNING: manifest build did not reach ready state after $((max_retries*sleep_seconds))s"
+  echo "WROTE $dump_file"
+  return 1
+}
+
 # Verify credentials for the requested profile before running any SMAPI
 # commands. If cli_config exists but is non-functional, delete it so a
 # subsequent auth flow can recreate it cleanly.
@@ -228,6 +284,11 @@ else
   run_ask_capture "$UPDATE_OUT_FILE" ask smapi update-skill-manifest --skill-id "$SKILL_ID" --manifest "file://$OUT_MANIFEST" --profile "$PROFILE"
   echo "WROTE $UPDATE_OUT_FILE"
   echo "Rebuilt existing skill: $SKILL_ID"
+fi
+
+if ! wait_for_manifest_ready "$SKILL_ID" "$PROFILE"; then
+  echo "Manifest is not ready; aborting before interaction model upload." >&2
+  exit 7
 fi
 
 # Note: enablement must happen after interaction models are uploaded and built.
