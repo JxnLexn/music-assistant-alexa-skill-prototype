@@ -11,8 +11,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install Python and system dependencies
 RUN apt-get update && \
     apt-get install -y python3.10 python3.10-venv python3-pip libssl-dev curl gnupg ca-certificates && \
-    # Install Node.js 18 from NodeSource (ASK CLI requires a modern Node version)
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    # Install a currently supported Node.js LTS from NodeSource for ASK CLI.
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 

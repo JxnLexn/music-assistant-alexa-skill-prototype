@@ -22,7 +22,7 @@
     "MA_HOSTNAME": "",
     "APP_USERNAME": "",
     "APP_PASSWORD": "",
-    "LOCALE": "en-US",
+    "LOCALE": "de-DE",
     "AWS_DEFAULT_REGION": "us-east-1",
     "TZ": "America/Chicago",
     "SKIP_URL_VALIDATION": false

@@ -20,7 +20,7 @@ ASK CLI credentials are stored persistently under `/data/.ask`, so re-authentica
 | `MA_HOSTNAME` | No | — | Public Music Assistant hostname. Required on non-APL devices and for externally reachable artwork URLs. |
 | `APP_USERNAME` | No | — | Basic-auth username for the add-on UI and API endpoints. |
 | `APP_PASSWORD` | No | — | Basic-auth password for the add-on UI and API endpoints. |
-| `LOCALE` | No | `en-US` | Alexa locale used for the skill manifest and interaction models. |
+| `LOCALE` | No | `de-DE` | Alexa locale used for the skill manifest and interaction models. |
 | `AWS_DEFAULT_REGION` | No | `us-east-1` | AWS region used by ASK CLI. |
 | `TZ` | No | `America/Chicago` | Timezone for container logs and timestamps. |
 | `SKIP_URL_VALIDATION` | No | `false` | Skip outgoing validation of the rewritten Music Assistant stream URL. |
