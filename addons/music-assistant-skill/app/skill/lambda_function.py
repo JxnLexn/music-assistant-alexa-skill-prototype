@@ -90,6 +90,16 @@ logging.basicConfig(
 
 supports_apl = False
 
+
+def _request_supports_spoken_response(handler_input):
+    """Return False for AudioPlayer/System-style requests that must stay silent."""
+    request = getattr(handler_input.request_envelope, 'request', None)
+    request_type = getattr(request, 'object_type', type(request).__name__)
+    session = getattr(handler_input.request_envelope, 'session', None)
+    if session is None:
+        return False
+    return not request_type.startswith(("AudioPlayer.", "PlaybackController.", "System."))
+
 def _get_stream_url(request):
     """Return (url, audio_data) where url is resolved from util.audio_data.
 
@@ -400,6 +410,7 @@ class PlaybackNearlyFinishedHandler(AbstractRequestHandler):
 
         return util.play_later(
             url=url,
+            current_token=getattr(request, 'token', None),
             response_builder=handler_input.response_builder
         )
 
@@ -428,7 +439,8 @@ class PlaybackFailedHandler(AbstractRequestHandler):
             offset=0, 
             text=None,
             response_builder=handler_input.response_builder,
-            supports_apl=supports_apl
+            supports_apl=supports_apl,
+            allow_speech=False
         )
 
 
@@ -545,7 +557,8 @@ class PlayCommandHandler(AbstractRequestHandler):
             offset=0,
             text=None,
             response_builder=handler_input.response_builder,
-            supports_apl=supports_apl
+            supports_apl=supports_apl,
+            allow_speech=False
         )
 
 
@@ -604,6 +617,8 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         # type: (HandlerInput, Exception) -> Response
         logger.info("In CatchAllExceptionHandler")
         logger.error(exception, exc_info=True)
+        if not _request_supports_spoken_response(handler_input):
+            return Response()
         _ = handler_input.attributes_manager.request_attributes["_"]
         handler_input.response_builder.speak(_(data.UNHANDLED_MSG)).ask(
             _(data.HELP_MSG).format(

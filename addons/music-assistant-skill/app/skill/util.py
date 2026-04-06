@@ -100,7 +100,52 @@ def push_alexa_metadata(url):
             logging.exception('Unexpected error while pushing Alexa metadata')
 
 
-def play(url, offset, text, response_builder, supports_apl=False):
+def _resolve_public_stream_url(url, validate=True):
+    """Rewrite the Music Assistant stream URL to the public hostname.
+
+    Returns the rewritten URL or ``None`` when the hostname is invalid or the
+    resource could not be reached during validation.
+    """
+    if not url:
+        return None
+
+    try:
+        hostname = get_ma_hostname(raise_on_http_scheme=True)
+    except ValueError:
+        logging.error('MA_HOSTNAME uses unsupported http:// scheme')
+        return None
+
+    if not hostname:
+        logging.error('MA_HOSTNAME is empty or invalid')
+        return None
+
+    public_url = replace_ip_in_url(url, hostname)
+
+    if not validate:
+        return public_url
+
+    skip_validation = os.environ.get('SKIP_URL_VALIDATION', 'false').lower() in ('true', '1', 'yes')
+    if skip_validation:
+        logging.info('Stream URL (validation skipped via SKIP_URL_VALIDATION): %s', public_url)
+        return public_url
+
+    try:
+        head_resp = requests.head(public_url, allow_redirects=True, timeout=5)
+        resp = head_resp
+        if head_resp.status_code >= 400:
+            resp = requests.get(public_url, stream=True, allow_redirects=True, timeout=5)
+
+        if resp.status_code >= 400:
+            logging.error('Audio URL returned HTTP %s: %s', resp.status_code, public_url)
+            return None
+    except requests.RequestException:
+        logging.exception('Failed to validate public stream URL: %s', public_url)
+        return None
+
+    return public_url
+
+
+def play(url, offset, text, response_builder, supports_apl=False, allow_speech=True):
     """Function to play audio.
 
     Using the function to begin playing audio when:
@@ -117,45 +162,14 @@ def play(url, offset, text, response_builder, supports_apl=False):
     if supports_apl:
         add_apl(response_builder)
     else:
-        # Sanitize MA_HOSTNAME and replace IP-host in the provided stream URL.
-        try:
-            hostname = get_ma_hostname(raise_on_http_scheme=True)
-        except ValueError:
-            response_builder.speak(
-                "The domain uses an unsupported scheme (http). Please check your environment variable MA_HOSTNAME.").set_should_end_session(True)
-            return response_builder.response
-
-        if not hostname:
-            response_builder.speak(
-                "You did not specify a valid hostname. Please check your environment variable MA_HOSTNAME.").set_should_end_session(True)
-            return response_builder.response
-
-        url = replace_ip_in_url(url, hostname)
-
-        skip_validation = os.environ.get('SKIP_URL_VALIDATION', 'false').lower() in ('true', '1', 'yes')
-
-        if skip_validation:
-            logging.info('Stream URL (validation skipped via SKIP_URL_VALIDATION): %s', url)
-        else:
-            # Ensure the resource exists and appears playable. Try HEAD first, fall back to GET.
-            try:
-                head_resp = requests.head(url, allow_redirects=True, timeout=5)
-                resp = head_resp
-                if head_resp.status_code >= 400:
-                    resp = requests.get(url, stream=True, allow_redirects=True, timeout=5)
-
-                if resp.status_code >= 400:
-                    logging.error('Audio URL returned HTTP %s: %s', resp.status_code, url)
-                    response_builder.speak(
-                        "Sorry, I can't reach the audio file. Please check that your stream URL is internet accessible via HTTPS at the MA_HOSTNAME variable you provided.")
-                    response_builder.set_should_end_session(True)
-                    return response_builder.response
-            except requests.RequestException:
-                logging.exception('Play Function URL: %s', url)
+        public_url = _resolve_public_stream_url(url, validate=True)
+        if not public_url:
+            if allow_speech:
                 response_builder.speak(
                     "Sorry, I can't reach the audio file. Please check that your stream URL is internet accessible via HTTPS at the MA_HOSTNAME variable you provided.")
                 response_builder.set_should_end_session(True)
-                return response_builder.response
+            return response_builder.response
+        url = public_url
 
         response_builder.add_directive(
             PlayDirective(
@@ -169,15 +183,48 @@ def play(url, offset, text, response_builder, supports_apl=False):
                     )
                 )
             )
-        ).set_should_end_session(True)
+        )
+        if allow_speech:
+            response_builder.set_should_end_session(True)
 
-    if text:
+    if text and allow_speech:
         response_builder.speak(text)
 
     try:
         push_alexa_metadata(url)
     except Exception:
         logging.exception('Error while preparing Alexa API push payload')
+
+    return response_builder.response
+
+
+def play_later(url, response_builder, current_token=None):
+    """Queue the next stream item without adding spoken output.
+
+    ``PlaybackNearlyFinished`` requests must respond with directives only.
+    """
+    public_url = _resolve_public_stream_url(url, validate=False)
+    if not public_url:
+        return response_builder.response
+
+    response_builder.add_directive(
+        PlayDirective(
+            play_behavior=PlayBehavior.ENQUEUE,
+            audio_item=AudioItem(
+                stream=Stream(
+                    token=public_url,
+                    url=public_url,
+                    offset_in_milliseconds=0,
+                    expected_previous_token=current_token or public_url
+                )
+            )
+        )
+    )
+
+    try:
+        push_alexa_metadata(public_url)
+    except Exception:
+        logging.exception('Error while preparing Alexa API push payload for queued stream')
 
     return response_builder.response
 
@@ -366,4 +413,3 @@ def schedule_apl_refresh(response_builder, delay_ms=1000):
         )
     except Exception:
         logging.exception('Error while scheduling APL refresh')
-
