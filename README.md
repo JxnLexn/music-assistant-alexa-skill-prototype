@@ -60,5 +60,6 @@ If you use Cloudflare in front of `SKILL_HOSTNAME`, set the minimum TLS version 
 - The add-on image is built from `addons/music-assistant-skill/Dockerfile`.
 - GitHub Actions publishes `ghcr.io/alams154/music-assistant-skill`.
 - Versioning is driven by `VERSION` and synced into the add-on config.
+- Original is from https://github.com/alams154/music-assistant-alexa-skill-prototype
 
 See [COMPATIBILITY.md](COMPATIBILITY.md), [LIMITATIONS.md](LIMITATIONS.md), and [DISCLAIMER.md](DISCLAIMER.md) for further details.
